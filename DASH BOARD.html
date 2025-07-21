@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gifts Leaderboard & Vouchers</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body.gifts-page {
+      background-color: #1a1a2e;
+      color: #fff;
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1.heading {
+      color: #fbd105;
+    }
+
+    table {
+      width: 90%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background: #292948;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #444;
+    }
+
+    th {
+      background-color: #fbd105;
+      color: #000;
+    }
+
+    form {
+      margin-top: 30px;
+    }
+
+    form input, form button {
+      margin: 10px;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+    }
+
+    form button {
+      background-color: #fbd105;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .message {
+      margin-top: 10px;
+      color: #4CAF50;
+      font-weight: bold;
+    }
+
+    .voucher-table td {
+      color: #fff;
+    }
+
+    .delete-btn {
+      background-color: red;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+    }
+
+    hr {
+      border: 1px solid #444;
+      margin: 40px 0;
+    }
+
+    #toggleAppBtn {
+      padding: 10px 20px;
+      background-color: #fbd105;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    #appStatusText {
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body class="gifts-page">
+  <h1 class="heading">🎮 App Control Panel</h1>
+  <button id="toggleAppBtn">🔄 Loading...</button>
+  <div id="appStatusText">Checking status...</div>
+
+  <h1 class="heading">🎁 Gifts Leaderboard</h1>
+  <table id="gifts-table">
+    <thead>
+      <tr>
+        <th>POSITION</th>
+        <th>VALUE</th>
+        <th>REWARD</th>
+      </tr>
+    </thead>
+    <tbody id="gifts-body"></tbody>
+  </table>
+
+  <form id="gift-form">
+    <h3>Add New Gift</h3>
+    <input type="text" id="position" placeholder="Position" required>
+    <input type="text" id="value" placeholder="Value" required>
+    <input type="text" id="reward" placeholder="Reward" required>
+    <button type="submit">Add Gift</button>
+    <div class="message" id="message"></div>
+  </form>
+
+  <hr>
+
+  <h1 class="heading">🎟 Airtime Vouchers</h1>
+  <form id="voucher-form">
+    <h3>Add / Update Voucher</h3>
+    <input type="text" id="rank" placeholder="Rank (1st, 2nd, 3rd)" required>
+    <input type="text" id="code" placeholder="Voucher Code" required>
+    <button type="submit">Save Voucher</button>
+    <div class="message" id="voucher-message"></div>
+  </form>
+
+  <table class="voucher-table" id="voucher-table">
+    <thead>
+      <tr>
+        <th>RANK</th>
+        <th>VOUCHER CODE</th>
+        <th>ACTION</th>
+      </tr>
+    </thead>
+    <tbody id="voucher-body"></tbody>
+  </table>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBdDyCiJ7flRZh2jbaYo5q4Hpjpou-rHAc",
+      authDomain: "brainpicklesotho-ef66c.firebaseapp.com",
+      projectId: "brainpicklesotho-ef66c",
+      storageBucket: "brainpicklesotho-ef66c.appspot.com",
+      messagingSenderId: "273452901797",
+      appId: "1:273452901797:web:edfbc18ee4043c3931f44c",
+      measurementId: "G-CXYY42FTEF"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const giftsRef = db.collection('gifts');
+    const voucherRef = db.collection('vouchers');
+    const gameStatusRef = db.collection('settingsgameStatus').doc('gameStatus');
+
+    const toggleBtn = document.getElementById("toggleAppBtn");
+    const statusText = document.getElementById("appStatusText");
+
+    // Load and toggle game status
+    async function loadGameStatus() {
+      try {
+        const doc = await gameStatusRef.get();
+        if (doc.exists) {
+          const isOn = doc.data().isGameOn;
+          updateToggleUI(isOn);
+        } else {
+          await gameStatusRef.set({ isGameOn: true });
+          updateToggleUI(true);
+        }
+      } catch (err) {
+        toggleBtn.textContent = "⚠️ Error";
+        statusText.textContent = "Could not load status.";
+        console.error("Error loading status:", err);
+      }
+    }
+
+    toggleBtn.addEventListener("click", async () => {
+      try {
+        const doc = await gameStatusRef.get();
+        if (doc.exists) {
+          const current = doc.data().isGameOn;
+          await gameStatusRef.update({ isGameOn: !current });
+          updateToggleUI(!current);
+        }
+      } catch (err) {
+        console.error("Toggle failed:", err);
+      }
+    });
+
+    function updateToggleUI(isOn) {
+      toggleBtn.textContent = isOn ? "🚫 Turn OFF App" : "✅ Turn ON App";
+      statusText.textContent = `Game is currently: ${isOn ? "🟢 ON" : "🔴 OFF"}`;
+      statusText.style.color = isOn ? "#4CAF50" : "red";
+    }
+
+    // Gifts
+    async function loadGifts() {
+      const snapshot = await giftsRef.get();
+      const giftsBody = document.getElementById('gifts-body');
+      giftsBody.innerHTML = '';
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        giftsBody.innerHTML += `
+          <tr>
+            <td>${data.position}</td>
+            <td>${data.value}</td>
+            <td>${data.reward}</td>
+          </tr>
+        `;
+      });
+    }
+
+    document.getElementById('gift-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const position = document.getElementById('position').value.trim();
+      const value = document.getElementById('value').value.trim();
+      const reward = document.getElementById('reward').value.trim();
+      if (!position || !value || !reward) return;
+      await giftsRef.add({ position, value, reward });
+      document.getElementById('gift-form').reset();
+      document.getElementById('message').textContent = "Gift added successfully!";
+      loadGifts();
+    });
+
+    // Vouchers
+    async function loadVouchers() {
+      const snapshot = await voucherRef.get();
+      const voucherBody = document.getElementById('voucher-body');
+      voucherBody.innerHTML = '';
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        voucherBody.innerHTML += `
+          <tr>
+            <td>${doc.id}</td>
+            <td>${data.code}</td>
+            <td><button class="delete-btn" onclick="deleteVoucher('${doc.id}')">Delete</button></td>
+          </tr>
+        `;
+      });
+    }
+
+    document.getElementById('voucher-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const rank = document.getElementById('rank').value.trim().toLowerCase();
+      const code = document.getElementById('code').value.trim();
+      if (!['1st', '2nd', '3rd'].includes(rank) || !code) {
+        alert("Rank must be 1st, 2nd, or 3rd and voucher cannot be empty.");
+        return;
+      }
+      await voucherRef.doc(rank).set({ code });
+      document.getElementById('voucher-form').reset();
+      document.getElementById('voucher-message').textContent = "Voucher saved!";
+      loadVouchers();
+    });
+
+    async function deleteVoucher(id) {
+      if (confirm(`Are you sure you want to delete the voucher for ${id}?`)) {
+        await voucherRef.doc(id).delete();
+        loadVouchers();
+      }
+    }
+
+    // Initial load
+    loadGameStatus();
+    loadGifts();
+    loadVouchers();
+  </script>
+</body>
+</html>
+
+

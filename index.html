@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BrainPick Dashboard</title>
+  <style>
+    :root {
+      --background-color: black;
+      --primary-color: #ffcc00; /* dark yellow */
+      --text-color: white;
+      --card-bg: #1f2024;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--background-color);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      color: var(--primary-color);
+      font-size: 2.5rem;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 30px;
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      padding: 30px 25px;
+      box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 180px;
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 0 30px var(--primary-color);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      color: var(--primary-color);
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+    }
+
+    .card p {
+      color: var(--text-color);
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <h1>BrainPick Database Management System</h1>
+
+  <div class="dashboard">
+    <div class="card" onclick="window.location.href='notification dash.html'">
+      <h2>Notification Management</h2>
+      <p>Manage and push notifications to app users. Configure messages and targeting.</p>
+    </div>
+
+    <div class="card" onclick="window.location.href='DASH BOARD.html'">
+      <h2>Gifts & App Control</h2>
+      <p>Control gifts, rewards, and app power settings. Manage player incentives and app ON/OFF status.</p>
+    </div>
+  </div>
+</body>
+</html>

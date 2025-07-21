@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BrainPick Admin Dashboard</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      color: #FFD700; /* Dark yellow */
+    }
+    input, button {
+      padding: 10px;
+      margin: 10px 0;
+      width: 100%;
+      border: none;
+      border-radius: 5px;
+    }
+    input {
+      background-color: #1a1a1a;
+      color: white;
+    }
+    button {
+      background-color: #FFD700;
+      color: black;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .notification-list {
+      margin-top: 30px;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #FFD700;
+      border-radius: 8px;
+      padding: 10px;
+      background-color: #1a1a1a;
+    }
+    .notification-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      border-bottom: 1px solid #444;
+      font-size: 16px;
+    }
+    .notification-item:last-child {
+      border-bottom: none;
+    }
+    .delete-btn {
+      color: #ff4d4d;
+      cursor: pointer;
+      font-weight: bold;
+      border: none;
+      background: none;
+      font-size: 16px;
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .delete-btn:hover {
+      color: #ff0000;
+    }
+  </style>
+</head>
+<body>
+  <h1>📢 Admin Notification Panel</h1>
+  <p>Enter a message below to send a notification to users:</p>
+  <input type="text" id="messageInput" placeholder="Type your message here..." />
+  <button onclick="sendNotification()">Send Notification</button>
+  <div id="status"></div>
+
+  <div class="notification-list" id="notificationList">
+    <!-- Notifications will be listed here -->
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBdDyCiJ7flRZh2jbaYo5q4Hpjpou-rHAc",
+      authDomain: "brainpicklesotho-ef66c.firebaseapp.com",
+      projectId: "brainpicklesotho-ef66c",
+      storageBucket: "brainpicklesotho-ef66c.appspot.com",
+      messagingSenderId: "273452901797",
+      appId: "1:273452901797:web:edfbc18ee4043c3931f44c",
+      measurementId: "G-CXYY42FTEF"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const notificationListEl = document.getElementById("notificationList");
+    const statusDiv = document.getElementById("status");
+
+    // Send a new notification
+    window.sendNotification = async function () {
+      const message = document.getElementById("messageInput").value.trim();
+
+      if (!message) {
+        statusDiv.innerHTML = "⚠️ Please enter a message.";
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "notifications"), {
+          message: message,
+          seen: false,
+          timestamp: serverTimestamp()
+        });
+        statusDiv.innerHTML = "✅ Notification sent successfully!";
+        document.getElementById("messageInput").value = "";
+      } catch (error) {
+        console.error("Error sending notification: ", error);
+        statusDiv.innerHTML = "❌ Error sending notification.";
+      }
+    };
+
+    // Delete a notification by id
+    async function deleteNotification(id) {
+      try {
+        await deleteDoc(doc(db, "notifications", id));
+        statusDiv.innerHTML = "✅ Notification deleted.";
+      } catch (error) {
+        console.error("Error deleting notification: ", error);
+        statusDiv.innerHTML = "❌ Error deleting notification.";
+      }
+    }
+
+    // Render notifications list
+    function renderNotifications(snapshot) {
+      if (snapshot.empty) {
+        notificationListEl.innerHTML = '<p style="color:#bbb; text-align:center;">No notifications yet.</p>';
+        return;
+      }
+
+      notificationListEl.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const id = docSnap.id;
+
+        const notifItem = document.createElement("div");
+        notifItem.className = "notification-item";
+
+        const messageSpan = document.createElement("span");
+        messageSpan.textContent = data.message;
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "delete-btn";
+        deleteBtn.innerHTML = "🗑️ Delete";
+        deleteBtn.title = "Delete notification";
+        deleteBtn.onclick = () => {
+          if (confirm("Are you sure you want to delete this notification?")) {
+            deleteNotification(id);
+          }
+        };
+
+        notifItem.appendChild(messageSpan);
+        notifItem.appendChild(deleteBtn);
+
+        notificationListEl.appendChild(notifItem);
+      });
+    }
+
+    // Real-time listener for notifications ordered by timestamp desc
+    const q = query(collection(db, "notifications"), orderBy("timestamp", "desc"));
+    onSnapshot(q, renderNotifications, error => {
+      console.error("Error fetching notifications:", error);
+      notificationListEl.innerHTML = '<p style="color:#f00; text-align:center;">Error loading notifications.</p>';
+    });
+  </script>
+</body>
+</html>
+
